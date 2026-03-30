@@ -35,8 +35,13 @@ export default defineConfig({
 				{
 					label: '指南',
 					items: [
+						{ label: '集群引导与恢复', slug: 'guides/bootstrap-and-recovery' },
 						{ label: '状态机开发', slug: 'guides/state-machine' },
 						{ label: 'Raftor 使用', slug: 'guides/raftor' },
+						{ label: 'RawNode Ready 流程', slug: 'guides/raw-node-ready-flow' },
+						{ label: '线性一致读', slug: 'guides/linearizable-reads' },
+						{ label: '成员变更', slug: 'guides/membership-changes' },
+						{ label: '快照与日志压缩', slug: 'guides/snapshots-and-compaction' },
 					],
 				},
 				{
@@ -44,6 +49,11 @@ export default defineConfig({
 					items: [
 						{ label: 'RaftorConfig', slug: 'reference/raftor-config' },
 						{ label: 'RawNode', slug: 'reference/raw-node' },
+						{ label: 'Storage', slug: 'reference/storage' },
+						{ label: 'WAL', slug: 'reference/wal' },
+						{ label: 'RPC Transport', slug: 'reference/rpc-transport' },
+						{ label: '复制流控', slug: 'reference/replication-flow-control' },
+						{ label: '提案与错误模型', slug: 'reference/proposals-and-errors' },
 					],
 				},
 				{
