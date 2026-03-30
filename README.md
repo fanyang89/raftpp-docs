@@ -1,49 +1,34 @@
-# Starlight Starter Kit: Basics
+# raftpp Docs
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+`docs/` 是 `raftpp` 的文档站点，使用 Astro + Starlight 构建。
 
-```
-pnpm create astro@latest -- --template starlight
-```
+## 本地开发
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+在 `docs/` 目录下执行：
 
-## 🚀 Project Structure
-
-Inside of your Astro + Starlight project, you'll see the following folders and files:
-
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+```bash
+pnpm install
+pnpm dev
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+默认会在 `http://localhost:4321` 启动预览。
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+## 构建
 
-Static assets, like favicons, can be placed in the `public/` directory.
+```bash
+pnpm build
+```
 
-## 🧞 Commands
+产物会输出到 `docs/dist/`。
 
-All commands are run from the root of the project, from a terminal:
+## 内容位置
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+- 页面内容：`src/content/docs/`
+- 站点配置：`astro.config.mjs`
+- 静态资源：`public/`
 
-## 👀 Want to learn more?
+## 编写约定
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+- 面向使用者的文档使用中文。
+- 代码片段、命令、API 名称保持原始英文。
+- 文档内容应与仓库中的真实实现保持一致，优先以头文件、CMake 配置和示例代码为准。

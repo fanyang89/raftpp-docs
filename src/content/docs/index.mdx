@@ -1,40 +1,48 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
-hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
-  actions:
-    - text: Example Guide
-      link: /guides/example/
-      icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
-      variant: minimal
+title: raftpp 文档
+description: raftpp 的中文技术文档。
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+`raftpp` 是一个以 C++17 实现的 RAFT 共识库，提供核心状态机、`Raftor` 高层编排、WAL、RPC 传输和示例工程。
 
-## Next steps
+## 文档范围
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>
+- 项目结构与组件分层
+- 构建方式与最小接入流程
+- `StateMachine` 与 `Raftor` 的使用说明
+- `RaftorConfig` 与 `RawNode` 的参考信息
+- `minimal_node` 与 `kvstore` 示例说明
+
+## 主要能力
+
+- 完整的 RAFT 状态机实现，包括选主、日志复制、成员变更和快照。
+- 线性一致读，支持 `Safe` 和 `LeaseBased` 两种模式。
+- 可插拔的存储和传输边界，内置 WAL、内存存储和 Cap'n Proto RPC。
+- 面向业务接入的高层 API，以及面向底层集成的 `RawNode` 接口。
+
+## 架构分层
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      你的应用 / 状态机                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                          Raftor                             │
+│      高层编排：生命周期、事件循环、提案、读索引、成员变更      │
+└─────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         ▼                    ▼                    ▼
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│  Transport  │      │   RawNode   │      │     WAL     │
+│     RPC     │      │  Raft Core  │      │   Storage   │
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+## 阅读顺序
+
+1. 阅读[项目概览](/overview/)，了解组件边界和目录结构。
+2. 阅读[快速开始](/getting-started/)，完成构建并运行最小示例。
+3. 阅读[状态机开发](/guides/state-machine/)和[Raftor 使用](/guides/raftor/)，完成业务接入。
+4. 需要底层控制时，查阅[RawNode 参考](/reference/raw-node/)。

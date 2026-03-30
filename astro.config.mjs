@@ -4,11 +4,12 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://fanyang89.github.io',
-	base: '/raftpp-docs',
+	site: 'https://raftpp.cc',
+	base: '/',
 	integrations: [
 		starlight({
-			title: 'My Docs',
+			title: 'raftpp 文档',
+			description: 'raftpp 的中文使用文档与架构说明。',
 			components: {
 				Sidebar: 'starlight-theme-obsidian/overrides/Sidebar.astro',
 				PageFrame: 'starlight-theme-obsidian/overrides/PageFrame.astro',
@@ -22,18 +23,39 @@ export default defineConfig({
 				'starlight-theme-obsidian/styles/centered-reading.css',
 				'starlight-theme-obsidian/styles/common.css',
 			],
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/fanyang89/raftpp' }],
 			sidebar: [
 				{
-					label: 'Guides',
+					label: '入门',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: '项目概览', slug: 'overview' },
+						{ label: '快速开始', slug: 'getting-started' },
 					],
 				},
 				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
+					label: '指南',
+					items: [
+						{ label: '状态机开发', slug: 'guides/state-machine' },
+						{ label: 'Raftor 使用', slug: 'guides/raftor' },
+					],
+				},
+				{
+					label: '参考',
+					items: [
+						{ label: 'RaftorConfig', slug: 'reference/raftor-config' },
+						{ label: 'RawNode', slug: 'reference/raw-node' },
+					],
+				},
+				{
+					label: '示例',
+					items: [
+						{ label: 'minimal_node', slug: 'examples/minimal-node' },
+						{ label: 'kvstore', slug: 'examples/kvstore' },
+					],
+				},
+				{
+					label: '其他',
+					items: [{ label: 'FAQ', slug: 'faq' }],
 				},
 			],
 		}),
