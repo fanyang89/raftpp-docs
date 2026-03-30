@@ -9,6 +9,19 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'My Docs',
+			components: {
+				Sidebar: 'starlight-theme-obsidian/overrides/Sidebar.astro',
+				PageFrame: 'starlight-theme-obsidian/overrides/PageFrame.astro',
+				PageSidebar: './src/components/PageSidebar.astro',
+				Pagination: 'starlight-theme-obsidian/overrides/Pagination.astro',
+				ThemeSelect: 'starlight-theme-obsidian/overrides/ThemeSelect.astro',
+			},
+			customCss: [
+				'starlight-theme-obsidian/styles/layers.css',
+				'starlight-theme-obsidian/styles/theme.css',
+				'starlight-theme-obsidian/styles/centered-reading.css',
+				'starlight-theme-obsidian/styles/common.css',
+			],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
 			sidebar: [
 				{
