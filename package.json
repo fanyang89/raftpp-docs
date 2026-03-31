@@ -13,6 +13,6 @@
     "@astrojs/starlight": "^0.38.2",
     "astro": "^6.0.1",
     "sharp": "^0.34.2",
-    "starlight-theme-obsidian": "^0.4.1"
+    "starlight-theme-next": "^0.4.0"
   }
 }

@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightThemeNext from 'starlight-theme-next';
 
 // https://astro.build/config
 export default defineConfig({
@@ -8,21 +9,9 @@ export default defineConfig({
 	base: '/',
 	integrations: [
 		starlight({
+			plugins: [starlightThemeNext()],
 			title: 'raftpp 文档',
 			description: 'raftpp 的中文使用文档与架构说明。',
-			components: {
-				Sidebar: 'starlight-theme-obsidian/overrides/Sidebar.astro',
-				PageFrame: 'starlight-theme-obsidian/overrides/PageFrame.astro',
-				PageSidebar: './src/components/PageSidebar.astro',
-				Pagination: 'starlight-theme-obsidian/overrides/Pagination.astro',
-				ThemeSelect: 'starlight-theme-obsidian/overrides/ThemeSelect.astro',
-			},
-			customCss: [
-				'starlight-theme-obsidian/styles/layers.css',
-				'starlight-theme-obsidian/styles/theme.css',
-				'starlight-theme-obsidian/styles/centered-reading.css',
-				'starlight-theme-obsidian/styles/common.css',
-			],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/fanyang89/raftpp' }],
 			sidebar: [
 				{
