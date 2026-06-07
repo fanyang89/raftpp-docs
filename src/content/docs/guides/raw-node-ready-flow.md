@@ -28,34 +28,28 @@ description: Ready、LightReady 与持久化顺序的使用说明。
 
 ## 处理顺序
 
-推荐顺序如下：
-
 1. 读取 `Ready`。
-2. 如启用 entry checksum，先校验待持久化 entries。
+2. 如启用 entry checksum，校验待持久化 entries。
 3. 持久化 `entries` 和 `hs`。
-4. 如果 `must_sync` 为真，则完成必要的同步落盘。
+4. 如果 `must_sync` 为真，同步落盘。
 5. 安装 `snapshot`。
 6. 发送持久化后可发送的消息。
 7. 应用已提交日志。
 8. 处理 `read_states`。
 9. 调用 `Advance()`。
 10. 处理返回的 `LightReady`。
-11. 在日志应用完成后调用 `AdvanceApply()` 或 `AdvanceApplyTo()`。
+11. 日志应用完成后调用 `AdvanceApply()` 或 `AdvanceApplyTo()`。
 
-顺序颠倒可能导致：
+顺序颠倒可能导致恢复点错误、重复发送消息或提交与应用进度不一致。
 
-- 崩溃恢复点错误
-- 重复发送消息
-- 提交与应用进度不一致
+## `rd.Messages()` 与 `light.messages`
 
-## `rd.Messages()` 与 `rd.light.messages`
+`Ready` 中的消息位置与节点角色有关：
 
-`Ready` 中的消息位置与节点角色有关。
+- 部分消息可直接从 `rd.Messages()` 取得。
+- 非 leader 的持久化后消息可能位于 `light.messages`。
 
-- 对部分场景，消息可直接从 `rd.Messages()` 取得。
-- 对非 leader 的持久化后消息，实际发送集合可能位于 `rd.light.messages`。
-
-因此不能只检查 `rd.Messages()`，而忽略 `rd.light.messages`。
+两者都需要检查，不能只看 `rd.Messages()`。
 
 ## `must_sync`
 

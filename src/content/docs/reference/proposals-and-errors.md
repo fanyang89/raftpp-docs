@@ -7,7 +7,7 @@ description: 提案、读请求、超时与回调完成条件说明。
 
 ## 提案路径
 
-普通提案的处理步骤如下：
+普通提案处理步骤：
 
 1. 调用方调用 `Propose()`、`ProposeSync()` 或 `ProposeAsync()`。
 2. 请求被放入 `ProposalQueue`。
@@ -33,7 +33,7 @@ description: 提案、读请求、超时与回调完成条件说明。
 
 ## 读请求路径
 
-读请求的处理步骤如下：
+读请求处理步骤：
 
 1. 调用方调用 `ReadIndex()` 或 `ReadIndexSync()`。
 2. 请求被放入 `ReadIndexQueue`。
@@ -45,11 +45,7 @@ description: 提案、读请求、超时与回调完成条件说明。
 
 超时由 `ProposalTracker::ExpireTimeouts()` 统一处理。
 
-超时来源包括：
-
-- `proposal_timeout`
-- `read_index_timeout`
-- 各次调用显式传入的超时时间
+超时来源：`proposal_timeout`、`read_index_timeout` 和各次调用显式传入的超时。
 
 超时后，回调收到的错误为 `RpcErrorCode::Timeout`。
 
@@ -57,18 +53,11 @@ description: 提案、读请求、超时与回调完成条件说明。
 
 ### 关闭
 
-`Raftor::Stop()` 会：
-
-- 先清空跨线程队列中的未处理请求
-- 再对所有已跟踪的提案调用 `FailAll(ShuttingDown)`
-- 再对所有已跟踪的读请求调用 `FailAllReads(ShuttingDown)`
+`Raftor::Stop()` 清空跨线程队列中的未处理请求，对已跟踪的提案调用 `FailAll(ShuttingDown)`，对已跟踪的读请求调用 `FailAllReads(ShuttingDown)`。
 
 ### 失去领导权
 
-`ReadyProcessor::CheckLeadershipChange()` 在检测到节点从 leader 退为非 leader 时，会：
-
-- 对提案调用 `FailAll(ProposalDropped)`
-- 对读请求调用 `FailAllReads(LostLeadership)`
+`ReadyProcessor::CheckLeadershipChange()` 检测到节点从 leader 退为非 leader 时，对提案调用 `FailAll(ProposalDropped)`，对读请求调用 `FailAllReads(LostLeadership)`。
 
 ## 常见错误语义
 
@@ -107,12 +96,10 @@ description: 提案、读请求、超时与回调完成条件说明。
 - metadata 变更：对应内部 metadata 日志被应用。
 - 读请求：对应 read index 已被确认，且本地应用进度达到该索引。
 
-## 文档中应明确的事项
-
-- `ProposeSync()` / `ReadIndexSync()` 的超时只表示调用方不再等待，不代表后台状态机一定停止处理。
-- `AddNode()` 的 peer 地址会随配置变更日志应用而写入 WAL 地址簿并更新 transport。
-- 失去领导权时，未完成提案和未完成读请求的错误语义不同。
-- 节点未 `Start()`、已经 `Stop()` 或正在关闭时，请求会以 `ShuttingDown` 拒绝。
+- `ProposeSync()` / `ReadIndexSync()` 超时仅表示调用方不再等待，后台状态机仍会继续处理。
+- `AddNode()` 的 peer 地址在配置变更日志应用后写入 WAL 地址簿并更新 transport。
+- 失去领导权时，未完成提案返回 `ProposalDropped`，未完成读请求返回 `LostLeadership`。
+- 节点未 `Start()`、已 `Stop()` 或正在关闭时，请求返回 `ShuttingDown`。
 
 ## 相关文档
 

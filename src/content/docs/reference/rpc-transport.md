@@ -31,15 +31,13 @@ RPC 传输层位于 `include/raftpp/raftor/rpc/`，负责节点间消息发送�
 - `MessageCallback`
 - `ErrorCallback`
 
-都只会在调用 `Transport::Poll()` 或 `Transport::Run()` 的线程上触发。
-
-因此，回调逻辑应视为运行在传输事件循环线程上。
+只在调用 `Transport::Poll()` 或 `Transport::Run()` 的线程上触发，即传输事件循环线程。
 
 ## `Send()` 语义
 
 `Send(nonstd::span<const Message>)` 根据消息的 `to` 字段路由。
 
-对于未知 peer，接口定义明确说明：消息会被静默丢弃。
+未知 peer 的消息会被静默丢弃。
 
 ## `Codec`
 
@@ -88,8 +86,6 @@ RPC 传输层位于 `include/raftpp/raftor/rpc/`，负责节点间消息发送�
 - `max_message_size`
 - `connect_timeout`
 - `reconnect_interval`
-
-## 文档中应明确的事项
 
 - 回调线程与调用 `Poll()` / `Run()` 的线程一致。
 - 未知 peer 的消息会被丢弃。

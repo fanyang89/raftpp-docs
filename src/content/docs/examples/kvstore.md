@@ -3,7 +3,7 @@ title: kvstore
 description: 带 HTTP 接口的分布式键值存储示例。
 ---
 
-`examples/kvstore/` 展示了如何基于 `Raftor` 构建一个具备 HTTP 接口的应用示例。
+`examples/kvstore/` 展示如何基于 `Raftor` 构建带 HTTP 接口的应用。
 
 ## 示例包含哪些部分
 
@@ -36,7 +36,7 @@ cmake --build build --target kvstore-example kvstore-cli
 - `--data-dir <dir>`：数据目录。
 - `--help`：显示帮助。
 
-首次启动多节点集群时，`--peers` 需要包含完整初始节点列表，并且包含当前节点自己。已有 WAL 数据后，启动会优先使用 WAL 中的配置和地址簿。
+首次启动多节点集群时，`--peers` 须包含完整初始节点列表及当前节点自己。已有 WAL 后，启动优先使用 WAL 中的配置和地址簿。
 
 ## 三节点启动示例
 

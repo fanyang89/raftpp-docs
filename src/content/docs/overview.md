@@ -3,7 +3,7 @@ title: 项目概览
 description: raftpp 的定位、核心能力与主要组件关系。
 ---
 
-`raftpp` 是一个以现代 C++ 实现的 RAFT 共识库。仓库当前实际构建标准为 `C++17`，并使用 CMake + Ninja 作为主要构建方式。
+`raftpp` 是以现代 C++ 实现的 RAFT 共识库，构建标准为 `C++17`，使用 CMake + Ninja。
 
 ## 核心特性
 
@@ -20,7 +20,7 @@ description: raftpp 的定位、核心能力与主要组件关系。
 
 ### Core 层
 
-位于 `include/raftpp/core/`，负责纯 RAFT 状态机逻辑。
+位于 `include/raftpp/core/`，负责 RAFT 状态机逻辑。
 
 - `Raft`：核心状态机，处理角色切换和消息分发。
 - `RawNode`：对外暴露的底层驱动接口。
@@ -30,7 +30,7 @@ description: raftpp 的定位、核心能力与主要组件关系。
 
 ### Raftor 层
 
-位于 `include/raftpp/raftor/`，负责将底层状态机组织为可直接集成的运行时组件。
+位于 `include/raftpp/raftor/`，将底层状态机组织为可直接集成的运行时组件。
 
 - 统一生命周期：`Create()`、`Start()`、`Run()`、`Stop()`。
 - 线程安全的提案与读接口。
@@ -56,7 +56,7 @@ description: raftpp 的定位、核心能力与主要组件关系。
 适合对 Ready 流程、持久化顺序和传输层有完全控制需求的场景。
 
 - 特点：控制粒度更细。
-- 代价：需要自行处理持久化、消息发送和已提交日志应用流程。
+- 代价：自行处理持久化、消息发送和已提交日志应用。
 
 ## 仓库结构
 

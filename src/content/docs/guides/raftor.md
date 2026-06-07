@@ -5,7 +5,7 @@ description: 高层编排 API 的生命周期、提案、读索引与成员管�
 
 `Raftor` 是 `raftpp` 的高层运行时入口，接口定义位于 `include/raftpp/raftor/raftor.h`。
 
-对于不需要自行处理 `Ready` 持久化顺序、消息发送和应用回调的场景，应优先使用该接口。
+不需要自行处理 `Ready` 持久化顺序、消息发送和应用回调时，优先使用该接口。
 
 ## 创建实例
 
@@ -24,7 +24,7 @@ auto raftor = raftpp::raftor::Raftor::Create(
 - 第一种：使用默认 WAL 存储和默认传输实现。
 - 第二种：注入自定义 `WritableStorage` 和传输，适用于测试或定制化集成场景。
 
-默认传输由 `RaftorConfig.transport_kind` 决定：`Capnp` 会打开网络监听，`Noop` 不打开 socket 且只适合没有远端 peer 的单节点或测试场景。
+默认传输由 `RaftorConfig.transport_kind` 决定：`Capnp` 打开网络监听，`Noop` 不打开 socket，仅适合无远端 peer 的单节点或测试。
 
 ## 生命周期
 
@@ -46,7 +46,7 @@ auto raftor = raftpp::raftor::Raftor::Create(
 
 ## 线程模型
 
-`Raftor` 内部采用单线程事件循环模型，但以下接口可以从任意线程安全调用：
+`Raftor` 内部是单线程事件循环，以下接口线程安全：
 
 - `Propose()`
 - `ProposeSync()`
@@ -54,7 +54,7 @@ auto raftor = raftpp::raftor::Raftor::Create(
 - `ReadIndex()`
 - `ReadIndexSync()`
 
-这意味着业务线程可以将请求投递到 RAFT 事件循环线程，而无需额外实现同步协议。
+业务线程可直接投递请求到 RAFT 事件循环，无需额外同步协议。
 
 ## 提案接口
 
@@ -95,11 +95,9 @@ raftor->ReadIndex("ctx", [](raftpp::Result<void> result) {
 });
 ```
 
-说明：
-
 - `ReadIndex()` 不直接返回业务数据。
-- 你的应用需要在读许可建立后，自行从状态机或业务存储中取值。
-- `RaftorConfig.read_only_option` 会影响该路径采用的算法。
+- 读许可建立后，应用自行从状态机或业务存储中取值。
+- `RaftorConfig.read_only_option` 决定该路径采用的算法。
 
 ## 集群成员管理
 
@@ -115,7 +113,7 @@ raftor->ReadIndex("ctx", [](raftpp::Result<void> result) {
 
 提交一个内部 metadata 日志来更新已有成员的传输地址。该成员必须已经存在于当前 `ConfState` 中。
 
-地址更新提交并应用后，会同步更新 WAL 地址簿和传输层 peer。节点重启后，默认 WAL 存储会从地址簿恢复 peer 地址。
+地址更新应用后同步更新 WAL 地址簿和传输层 peer。节点重启后，默认 WAL 从地址簿恢复 peer 地址。
 
 ### `TransferLeader(target_id)`
 
@@ -148,22 +146,22 @@ raftor->ReadIndex("ctx", [](raftpp::Result<void> result) {
 
 `TakeSnapshot()` 会主动触发一次快照流程。
 
-在长期运行场景中，通常通过 `RaftorConfig` 中的快照阈值进行自动触发。
+长期运行场景通常通过 `RaftorConfig` 快照阈值自动触发。
 
-节点启动时，如果存储中存在本地快照，`Raftor::Create()` 会先把快照恢复到状态机，再用快照 index 作为 `RawNode` 的初始 applied index。
+节点启动时，如果存储中存在本地快照，`Raftor::Create()` 先恢复到状态机，再以快照 index 作为 `RawNode` 的初始 applied index。
 
 ## 数据完整性
 
-如果设置 `config.enable_entry_checksum = true`，Raftor 会校验提案 entry 的 checksum。发现 `ChecksumMismatch` 时会进入 terminal state：节点停止运行，后续 `Start()`、提案和读请求都会返回同一个错误。
+`config.enable_entry_checksum = true` 时，Raftor 校验提案 entry 的 checksum。发现 `ChecksumMismatch` 进入 terminal state，节点停止运行，后续 `Start()`、提案和读请求均返回该错误。
 
-该选项默认关闭，用于兼容旧 WAL 数据和滚动升级过程。
+默认关闭，用于兼容旧 WAL 和滚动升级。
 
 ## 何时直接使用 `RawNode`
 
-在以下场景中，可以考虑直接使用 `RawNode`：
+以下场景直接使用 `RawNode`：
 
 - 必须自己控制 Ready 持久化与发送顺序。
 - 已经有一套现成的传输和存储框架，且不想适配到 `Raftor` 约定。
 - 需要对复制流程、批处理或推进时机做精细调优。
 
-除上述场景外，`Raftor` 通常可以满足集成需求。
+

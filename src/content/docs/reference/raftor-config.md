@@ -21,7 +21,7 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 ### `transport_kind`
 
 - `TransportKind::Capnp`：默认传输实现，使用 Cap'n Proto RPC，需要配置 `listen_addr`。
-- `TransportKind::Noop`：不打开网络连接，丢弃出站消息，适合单进程测试或确认不会存在远端 peer 的单节点场景。
+- `TransportKind::Noop`：不打开网络连接，丢弃出站消息，适合单进程测试或无远端 peer 的单节点场景。
 
 ### `initial_peers`
 
@@ -40,23 +40,21 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 ### `election_tick`
 
 - 选举超时 tick 数。
-- 实际超时时间约等于 `election_tick * tick_interval`。
+- 实际超时时间 ≈ `election_tick * tick_interval`。
 
 ### `heartbeat_tick`
 
 - leader 心跳间隔 tick 数。
-- 实际间隔约等于 `heartbeat_tick * tick_interval`。
+- 实际间隔 ≈ `heartbeat_tick * tick_interval`。
 
 ### `tick_interval`
 
 - 每个 tick 的墙钟间隔。
 - 默认值为 `100ms`。
 
-配置说明：
-
-- `election_tick` 应明显大于 `heartbeat_tick`。
-- 网络稳定的小规模集群可直接使用默认值。
-- 如果部署环境抖动较大，可适当增大 `tick_interval` 或 `election_tick`。
+- `election_tick` 须明显大于 `heartbeat_tick`。
+- 网络稳定的小规模集群可使用默认值。
+- 部署环境抖动较大时，适当增大 `tick_interval` 或 `election_tick`。
 
 ## 复制与流控
 
@@ -90,8 +88,8 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 ### `enable_entry_checksum`
 
 - 是否为提案 entry 启用端到端 CRC32C 校验。
-- 默认值为 `false`，以兼容旧 WAL 数据或滚动升级期间未写入 checksum 的 entry。
-- 启用后，`Raftor` 会在持久化和应用 entry 前校验 `entryType`、`context` 和 `data`。发现 `ChecksumMismatch` 时节点会进入 terminal state，并拒绝后续请求。
+- 默认 `false`，兼容旧 WAL 数据或滚动升级期间未写入 checksum 的 entry。
+- 启用后，`Raftor` 在持久化和应用 entry 前校验 `entryType`、`context` 和 `data`。`ChecksumMismatch` 时节点进入 terminal state，拒绝后续请求。
 
 ## 网络与请求超时
 
@@ -126,7 +124,7 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 - 按固定时间间隔触发自动快照。
 - 设为 `0` 表示禁用。
 
-实际配置时，通常只需启用一到两种自动快照条件，不建议同时将三个阈值设置得过于激进。
+通常启用一到两种自动快照条件即可，不建议三个阈值同时设置得过于激进。
 
 ## 常见配置示例
 
@@ -173,7 +171,7 @@ config.data_dir = "./node-1";
 
 ## 校验
 
-创建节点前，建议显式执行：
+创建节点前显式执行：
 
 ```cpp
 auto validation = config.Validate();
@@ -182,4 +180,4 @@ if (!validation) {
 }
 ```
 
-如无明确约束，可先使用默认值，再根据网络延迟、日志吞吐和快照成本逐步调整。
+无明确约束时先使用默认值，再根据网络延迟、日志吞吐和快照成本逐步调整。

@@ -3,7 +3,7 @@ title: Storage
 description: raftpp::Storage 接口及其实现约束。
 ---
 
-`Storage` 是 Core 层用于访问稳定存储的抽象接口，定义位于 `include/raftpp/core/storage.h`。
+`Storage` 是 Core 层访问稳定存储的抽象接口，定义位于 `include/raftpp/core/storage.h`。
 
 ## 接口列表
 
@@ -69,7 +69,7 @@ description: raftpp::Storage 接口及其实现约束。
 
 ## `WritableStorage`
 
-`WritableStorage` 在 `Storage` 基础上增加 Raftor 运行时需要的写接口：
+`WritableStorage` 在 `Storage` 基础上增加写接口：
 
 - `Append(entries)`
 - `SetHardState(hs)`
@@ -79,7 +79,7 @@ description: raftpp::Storage 接口及其实现约束。
 - `LocalSnapshot()`
 - `LogSizeBytes()`
 
-其中 `LocalSnapshot()` 和 `LogSizeBytes()` 有默认实现。前者用于启动时恢复本地应用快照，后者用于基于 WAL 目录体积的自动快照触发。
+`LocalSnapshot()` 用于启动时恢复本地快照，`LogSizeBytes()` 用于基于 WAL 目录体积的自动快照触发。
 
 ## 与 `Raftor` 的关系
 

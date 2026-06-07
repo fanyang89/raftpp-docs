@@ -3,7 +3,7 @@ title: WAL
 description: raftpp WAL 子系统的组成、恢复语义与配置项说明。
 ---
 
-WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持久化日志、硬状态和配置状态支持。
+WAL 子系统位于 `include/raftpp/raftor/wal/`，为 `Raftor` 提供持久化日志、硬状态和配置状态。
 
 ## 主要组件
 
@@ -16,7 +16,7 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 
 ## `WAL`
 
-`WAL` 是底层写前日志实现，负责：
+`WAL` 负责：
 
 - 追加日志条目
 - 保存 `HardState`
@@ -34,7 +34,7 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 
 ## `WALStorage`
 
-`WALStorage` 基于 `WAL` 实现 `Storage` 接口，并增加了以下特性：
+`WALStorage` 基于 `WAL` 实现 `Storage` 接口，额外提供：
 
 - `SetHardState()`
 - `Append()`
@@ -48,27 +48,27 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 - `UpsertPeerAddress()` / `RemovePeerAddress()`
 - `SnapshotIndex()`
 
-其中 `IsInitialized()` 通过 `ConfState.voters` 是否非空判断该存储是否已经完成初始集群配置写入。
+`IsInitialized()` 通过 `ConfState.voters` 是否非空判断存储是否已完成初始集群配置写入。
 
 ## Peer 地址簿
 
-`WAL` 元数据会持久化 Raftor 使用的 peer 地址簿。
+`WAL` 元数据持久化 peer 地址簿。
 
 - 首次引导时，地址簿来自 `initial_peers`；单节点引导时写入当前节点的 `node_id` 和 `listen_addr`。
 - 节点重启且 WAL 已初始化时，Raftor 会从 WAL 读取 peer 地址，而不是重新使用 `initial_peers`。
 - `UpdateNodeAddress(id, addr)` 会通过普通日志提交地址变更；应用后调用 `UpsertPeerAddress()` 并更新传输层 peer。
 - `RemoveNode(id)` 对应的配置变更应用后会调用 `RemovePeerAddress()` 并移除传输层 peer。
 
-这意味着运行期地址变化应通过 Raftor API 提交，而不是只修改重启参数。
+运行期地址变化应通过 Raftor API 提交，不能只修改重启参数。
 
 ## 快照语义
 
-`WALStorage` 在内存中维护一个当前快照副本，并在 `ApplySnapshot()` 时：
+`WALStorage` 在内存中维护快照副本，`ApplySnapshot()` 时：
 
 1. 先更新内存中的快照对象。
 2. 再调用底层 `WAL::ApplySnapshot()`。
 
-`Term(idx)` 会优先检查当前快照元数据，因此能正确处理“索引正好等于快照索引”的查询。
+`Term(idx)` 优先检查快照元数据，可正确处理索引等于快照索引的查询。
 
 ## I/O 后端
 
@@ -120,9 +120,9 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 - 恢复 `HardState` 与 `ConfState`
 - 恢复 peer address book 与快照索引
 
-因此，节点重启后应继续使用原有 `data_dir`，否则不会进入同一恢复路径。
+节点重启后应继续使用原有 `data_dir`，否则进入不同的恢复路径。
 
-`WALStorage::LocalSnapshot()` 会返回最新本地应用快照。`Raftor::Create()` 会在创建 `RawNode` 前先把该快照恢复到业务状态机，并把快照 index 作为初始 applied index。
+`WALStorage::LocalSnapshot()` 返回最新本地应用快照。`Raftor::Create()` 在创建 `RawNode` 前先将该快照恢复到状态机，并以快照 index 作为初始 applied index。
 
 ## 相关文档
 

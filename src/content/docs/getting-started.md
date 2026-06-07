@@ -3,7 +3,7 @@ title: 快速开始
 description: 从构建仓库到运行最小节点的入门步骤。
 ---
 
-本文说明 `raftpp` 的基本构建方式，以及最小接入流程所需的核心接口。
+`raftpp` 的基本构建方式与最小接入流程。
 
 ## 环境要求
 
@@ -26,13 +26,11 @@ task fmt
 task check-fmt
 ```
 
-说明：
-
-- `task cmake`：使用 `Debug` preset 配置工程。
+- `task cmake`：`Debug` preset 配置工程。
 - `task build`：构建测试目标。
 - `task test`：运行单元测试与数据驱动测试。
-- `task fmt`：通过仓库提供的容器化 `clang-format` 统一格式化代码。
-- `task check-fmt`：只检查格式，不修改文件。
+- `task fmt`：容器化 `clang-format` 格式化代码。
+- `task check-fmt`：检查格式，不修改文件。
 
 其他常用任务：
 
@@ -44,11 +42,11 @@ task coverage
 task iwyu
 ```
 
-- `task unit-test-asan`：使用 AddressSanitizer 构建并运行单元测试。
-- `task unit-test-tsan`：使用 ThreadSanitizer 构建并运行单元测试。
-- `task unit-test-release`：使用 `Release` preset 构建并运行单元测试。
-- `task coverage`：使用 `Coverage` preset 和 `llvm-cov` 生成覆盖率报告。
-- `task iwyu`：启用 include-what-you-use 检查。
+- `task unit-test-asan`：AddressSanitizer 构建并运行单元测试。
+- `task unit-test-tsan`：ThreadSanitizer 构建并运行单元测试。
+- `task unit-test-release`：`Release` preset 构建并运行单元测试。
+- `task coverage`：`Coverage` preset + `llvm-cov` 生成覆盖率报告。
+- `task iwyu`：include-what-you-use 检查。
 
 ## 可选构建参数
 
@@ -72,9 +70,9 @@ cmake --preset=Debug -B build -DRAFTPP_USE_EXTERNAL_FMT=ON
 
 ## 最小集成步骤
 
-最小接入流程可分为三个步骤：
+最小接入流程：
 
-1. 实现一个 `StateMachine`。
+1. 实现 `StateMachine`。
 2. 构造 `RaftorConfig` 并创建 `Raftor`。
 3. 启动事件循环并提交提案。
 
@@ -132,7 +130,7 @@ for (int i = 0; i < 20; ++i) {
 raftor->Stop();
 ```
 
-如果需要阻塞式事件循环，可以调用 `Run()`；如果需要嵌入现有事件循环，则使用 `Start()` + `Poll()`。
+阻塞式事件循环调用 `Run()`，嵌入现有事件循环使用 `Start()` + `Poll()`。
 
 ## 提交提案
 
@@ -157,7 +155,7 @@ raftor->ReadIndex("read-ctx", [](raftpp::Result<void> result) {
 });
 ```
 
-`ReadIndex()` 只负责建立线性一致读许可，不直接返回业务数据。实际读取仍由应用层完成。
+`ReadIndex()` 只建立线性一致读许可，不返回业务数据，实际读取由应用层完成。
 
 ## 运行示例程序
 
@@ -171,4 +169,4 @@ cmake --build build --target minimal-node-example kvstore-example kvstore-cli
 - `kvstore-example`：带 HTTP 接口的分布式 KV 示例。
 - `kvstore-cli`：访问 KV 示例 HTTP 接口的命令行客户端。
 
-首次验证接入流程时，可优先构建并运行 `minimal-node-example`。
+首次验证优先构建并运行 `minimal-node-example`。

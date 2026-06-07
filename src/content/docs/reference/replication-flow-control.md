@@ -96,10 +96,8 @@ description: Progress、Inflights 与复制状态转换说明。
 
 成员变更会改变 `ProgressTracker` 内部的配置和 `ProgressMap`。`ConfChanger` 返回的 `MapChange` 最终会通过 `ProgressTracker::ApplyConf()` 应用。
 
-## 文档中应明确的事项
-
-- `Inflights` 控制的是“在路上的复制请求数量”，不是日志条目数。
-- `Probe`、`Replicate`、`Snapshot` 表示复制阶段，而不是节点角色。
+- `Inflights` 控制的是"在路上的复制请求数量"，不是日志条目数。
+- `Probe`、`Replicate`、`Snapshot` 表示复制阶段，不是节点角色。
 - `ProgressTracker` 同时承担复制进度和法定人数计算职责。
 
 ## 相关文档

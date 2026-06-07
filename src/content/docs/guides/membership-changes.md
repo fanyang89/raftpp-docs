@@ -3,11 +3,11 @@ title: 成员变更
 description: 配置变更、 Joint Consensus、learner 与运行期成员管理说明。
 ---
 
-成员变更相关逻辑主要由 `ConfChanger`、`ProgressTracker` 和 `RawNode::ApplyConfChange()` 协同完成。
+成员变更由 `ConfChanger`、`ProgressTracker` 和 `RawNode::ApplyConfChange()` 协同完成。
 
 ## 变更模型
 
-`raftpp` 支持基于 `ConfChangeV2` 的配置变更。文档层面应区分以下几种形式：
+`raftpp` 支持基于 `ConfChangeV2` 的配置变更，分为三种形式：
 
 - simple change
 - joint consensus
@@ -17,9 +17,9 @@ description: 配置变更、 Joint Consensus、learner 与运行期成员管理�
 
 simple change 适用于单次只修改一个 voter 的情况。
 
-`ConfChanger::Simple()` 会在应用后比较新旧 voter 集合；如果一次 simple change 影响多个 voter，将返回 `MultipleVotersChangedWithoutJoint`。
+`ConfChanger::Simple()` 应用后比较新旧 voter 集合；一次影响多个 voter 时返回 `MultipleVotersChangedWithoutJoint`。
 
-因此，以下规则必须成立：
+规则：
 
 - 一次 simple change 不能同时增加或删除多个 voter。
 - 多 voter 变更必须进入 joint consensus。
@@ -28,7 +28,7 @@ simple change 适用于单次只修改一个 voter 的情况。
 
 当需要在一次变更中影响多个 voter 时，应使用 joint consensus。
 
-`ConfChanger::EnterJoint()` 会：
+`ConfChanger::EnterJoint()`：
 
 - 把当前 `incoming` voter 集合复制到 `outgoing`
 - 对新配置应用变更
@@ -38,7 +38,7 @@ joint 状态下，配置同时包含 `incoming` 和 `outgoing` 两组 voter。
 
 ## 离开 joint
 
-`ConfChanger::LeaveJoint()` 会：
+`ConfChanger::LeaveJoint()`：
 
 - 把 `learners_next` 合并到 `learners`
 - 移除只存在于 `outgoing`、但不在 `incoming` 和 `learners` 中的节点进度
@@ -51,9 +51,9 @@ joint 状态下，配置同时包含 `incoming` 和 `outgoing` 两组 voter。
 
 learner 节点不会参与投票。
 
-当一个节点在 joint 配置中从 voter 转为 learner 时，并不会立即进入 `learners`；如果它仍在 `outgoing` voter 集合中，会先进入 `learners_next`，直到离开 joint 后才真正落入 `learners`。
+当一个节点在 joint 配置中从 voter 转为 learner 时，并不会立即进入 `learners`；如果它仍在 `outgoing` voter 集合中，会先进入 `learners_next`，直到离开 joint 后才正式成为 `learners`。
 
-这也是 `learners_next` 必须在非 joint 状态下为空的原因。
+因此 `learners_next` 在非 joint 状态下必须为空。
 
 ## `auto_leave`
 
@@ -63,7 +63,7 @@ learner 节点不会参与投票。
 
 ## `Raftor` 层接口
 
-`Raftor` 暴露了两个常用接口：
+`Raftor` 暴露的常用接口：
 
 - `AddNode(id, addr)`
 - `RemoveNode(id)`
@@ -71,25 +71,21 @@ learner 节点不会参与投票。
 
 ### `AddNode(id, addr)`
 
-该接口会：
+该接口构造 `ConfChangeV2`（`ADD_NODE`），把 `addr` 写入 `context`，调用 `raw_node_->ProposeConfChange()` 发起提案。
 
-1. 构造一个 `ConfChangeV2`，类型为 `ADD_NODE`
-2. 把 `addr` 写入配置变更的 `context`
-3. 调用 `raw_node_->ProposeConfChange()` 发起提案
-
-需要明确的是：返回成功只表示配置变更提案已经发起，并不表示该节点已经成为生效成员。
+返回成功只表示提案已发起，不代表该节点已成为生效成员。
 
 对应配置变更日志被应用后，Raftor 才会把地址写入 WAL 地址簿，并对非本节点调用 `transport_.AddPeer(id, addr)`。
 
 ### `RemoveNode(id)`
 
-该接口只负责发起 `REMOVE_NODE` 配置变更提案。真正从传输层移除 peer 的动作发生在对应配置变更日志被应用时。
+该接口发起 `REMOVE_NODE` 配置变更提案；传输层移除 peer 发生在配置变更日志应用时。
 
 ### `UpdateNodeAddress(id, addr)`
 
-该接口用于更新已存在成员的传输地址，而不是修改成员集合。
+该接口更新已存在成员的传输地址，不修改成员集合。
 
-处理流程如下：
+流程：
 
 1. 校验 `id` 非零，`addr` 非空。
 2. 从当前 `ConfState` 确认该节点已存在。
@@ -101,7 +97,7 @@ learner 节点不会参与投票。
 
 ## 配置变更日志的应用
 
-`ReadyProcessor::ApplyEntry()` 在处理配置变更日志时会：
+`ReadyProcessor::ApplyEntry()` 处理配置变更日志时：
 
 - 将 v1 配置变更转换为 `ConfChangeV2`
 - 调用 `raw_node_.ApplyConfChange(cc)` 更新跟踪器状态
@@ -109,14 +105,14 @@ learner 节点不会参与投票。
 - 对 `REMOVE_NODE` 删除地址簿并执行 `transport_.RemovePeer()`
 - 在存在上下文时完成对应提案回调
 
-## 文档中应明确的限制
+## 限制
 
 - 运行中的成员变更不能通过修改 `initial_peers` 完成。
 - simple change 一次不能修改多个 voter。
-- `AddNode()` 的返回成功不等于成员已经提交并生效。
-- `AddNode()` 不再在提案发起时立即加入 transport；peer 加入发生在配置变更日志应用后。
-- 地址更新应使用 `UpdateNodeAddress()`，并要求目标节点已在当前配置中。
-- learner 与 `learners_next` 的差异必须明确区分。
+- `AddNode()` 返回成功只表示提案已发起，不代表成员已生效。
+- `AddNode()` 不会在提案发起时立即加入 transport；peer 加入发生在配置变更日志应用后。
+- 地址更新应使用 `UpdateNodeAddress()`，目标节点必须已在当前配置中。
+- learner 与 `learners_next` 的差异见上文。
 
 ## 相关文档
 

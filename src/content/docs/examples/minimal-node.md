@@ -3,7 +3,7 @@ title: minimal_node
 description: 最小单节点示例说明。
 ---
 
-`examples/minimal_node/` 是仓库中的最小可运行示例，用于说明 `raftpp` 的基本接入方式。
+`examples/minimal_node/` 是最小可运行示例，说明 `raftpp` 的基本接入方式。
 
 ## 示例展示了什么
 
@@ -32,12 +32,7 @@ cmake --build build --target minimal-node-example
 ./build/examples/minimal_node/minimal-node-example
 ```
 
-程序会：
-
-1. 创建本地数据目录 `./minimal-node-data`。
-2. 启动一个节点 ID 为 `1` 的单节点集群。
-3. 反复调用 `Poll()` 驱动事件循环。
-4. 在单节点场景下等待节点当选 leader。
+程序创建本地数据目录 `./minimal-node-data`，启动节点 ID 为 `1` 的单节点集群，反复调用 `Poll()` 驱动事件循环，等待节点当选 leader。
 
 程序在 20 次轮询内检测到 leader 后返回 `0`；如果未当选 leader 或启动失败，则返回 `1`。
 
