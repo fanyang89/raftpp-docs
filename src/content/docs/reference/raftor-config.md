@@ -20,7 +20,8 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 
 ### `transport_kind`
 
-- 当前仅提供 `TransportKind::Capnp`。
+- `TransportKind::Capnp`：默认传输实现，使用 Cap'n Proto RPC，需要配置 `listen_addr`。
+- `TransportKind::Noop`：不打开网络连接，丢弃出站消息，适合单进程测试或确认不会存在远端 peer 的单节点场景。
 
 ### `initial_peers`
 
@@ -86,6 +87,12 @@ description: raftpp::raftor::RaftorConfig 主要字段说明与推荐配置。
 - `ReadOnlyOption::Safe`：通过法定多数确认读许可，更保守。
 - `ReadOnlyOption::LeaseBased`：基于 leader lease，延迟更低，但更依赖时钟与 quorum 检查配置。
 
+### `enable_entry_checksum`
+
+- 是否为提案 entry 启用端到端 CRC32C 校验。
+- 默认值为 `false`，以兼容旧 WAL 数据或滚动升级期间未写入 checksum 的 entry。
+- 启用后，`Raftor` 会在持久化和应用 entry 前校验 `entryType`、`context` 和 `data`。发现 `ChecksumMismatch` 时节点会进入 terminal state，并拒绝后续请求。
+
 ## 网络与请求超时
 
 ### `connect_timeout`
@@ -150,6 +157,19 @@ config.check_quorum = true;
 config.read_only_option = raftpp::ReadOnlyOption::Safe;
 config.snapshot_entries_threshold = 10000;
 ```
+
+### 单节点测试配置
+
+如果不需要打开网络端口，可使用 `Noop` transport：
+
+```cpp
+raftpp::raftor::RaftorConfig config;
+config.node_id = 1;
+config.transport_kind = raftpp::raftor::TransportKind::Noop;
+config.data_dir = "./node-1";
+```
+
+此模式不应在存在远端 peer 的集群中使用。
 
 ## 校验
 

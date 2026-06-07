@@ -7,7 +7,7 @@ description: 首次部署、节点重启以及 WAL 初始化状态对启动行�
 
 ## 启动路径
 
-`Raftor::Create()` 会先创建 `WALStorage`，然后根据 WAL 是否已经包含集群配置决定启动路径。
+`Raftor::Create()` 的默认工厂会先创建 `WALStorage`，然后根据 WAL 是否已经包含集群配置决定启动路径。使用自定义工厂时，传入的 `WritableStorage` 也会走同样的 bootstrap 判断。
 
 ### WAL 未初始化
 
@@ -24,6 +24,15 @@ description: 首次部署、节点重启以及 WAL 初始化状态对启动行�
 
 - `initial_peers` 只在首次引导时生效。
 - 节点重启后，不应依赖修改 `initial_peers` 来变更集群拓扑。
+- 默认 WAL 存储会从持久化的 peer address book 恢复对等节点地址。
+
+### 本地快照恢复
+
+在创建 `RawNode` 前，`Raftor::Create()` 会调用 `storage.LocalSnapshot()`：
+
+- 如果存在本地快照，先调用状态机 `RestoreSnapshot()` 恢复业务状态。
+- 然后把快照 index 作为初始 applied index 传给 `RawNode`。
+- 如果不存在本地快照，则从 applied index `0` 启动。
 
 ## 单节点引导
 
@@ -68,6 +77,8 @@ config.initial_peers = {
 
 其中 `data_dir` 尤其关键。`raftpp` 默认把 WAL 放在 `data_dir / "wal"` 下；如果重启时切换到新的数据目录，就会被视为一个未初始化节点。
 
+如果 peer 地址发生变化，应在运行期调用 `UpdateNodeAddress(id, addr)` 提交变更。只修改重启参数不会更新已经持久化在 WAL 中的地址簿。
+
 ## 与成员变更的关系
 
 运行中的成员变更应通过配置变更日志完成，而不是修改 `initial_peers`。原因是：
@@ -81,7 +92,8 @@ config.initial_peers = {
 - `node_id` 必须长期稳定。
 - 同一 `node_id` 不应复用到另一个独立节点实例。
 - `listen_addr` 应与节点实际对外服务地址一致。
-- `AddNode(id, addr)` 中的 `addr` 会被立即加入传输层，因此应保证地址在成员变更完成前后都可用。
+- `AddNode(id, addr)` 中的 `addr` 会随配置变更日志一起提交，并在日志应用后写入地址簿和加入传输层。
+- `UpdateNodeAddress(id, addr)` 只适用于当前配置中已经存在的节点。
 
 ## 推荐部署流程
 

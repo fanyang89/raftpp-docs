@@ -67,14 +67,29 @@ description: raftpp::Storage 接口及其实现约束。
 
 如果需要理解接口的最小正确实现，可先阅读 `MemoryStorage`。
 
+## `WritableStorage`
+
+`WritableStorage` 在 `Storage` 基础上增加 Raftor 运行时需要的写接口：
+
+- `Append(entries)`
+- `SetHardState(hs)`
+- `SetConfState(conf_state)`
+- `ApplySnapshot(snapshot)`
+- `Sync()`
+- `LocalSnapshot()`
+- `LogSizeBytes()`
+
+其中 `LocalSnapshot()` 和 `LogSizeBytes()` 有默认实现。前者用于启动时恢复本地应用快照，后者用于基于 WAL 目录体积的自动快照触发。
+
 ## 与 `Raftor` 的关系
 
-`Raftor::Create(config, state_machine, storage, transport)` 虽然参数类型是 `std::shared_ptr<Storage>`，但当前实现会要求该对象能够动态转换为 `WALStorage`，否则返回 `IncompatibleStorage`。
+`Raftor::Create(config, state_machine, storage, transport)` 当前接收 `std::shared_ptr<WritableStorage>`，调用方可以注入自定义可写存储和自定义传输。
 
 因此：
 
 - Core 层可基于任意 `Storage` 实现工作。
-- 当前 `Raftor` 的自定义存储接入仍以 `WALStorage` 为前提。
+- Raftor 层需要 `WritableStorage`，因为它负责持久化 `Ready` 中的 entries、hard state、conf state 和 snapshot。
+- 如果注入的存储不是 `WALStorage`，Raftor 仍可运行，但不会使用 WAL 地址簿能力；peer 地址恢复将依赖启动配置或调用方自定义传输。
 
 ## 自定义存储实现注意事项
 
@@ -82,6 +97,8 @@ description: raftpp::Storage 接口及其实现约束。
 - 不能返回破坏日志连续性的结果。
 - 快照边界与日志边界必须一致。
 - 如果支持异步取日志，应正确处理 `GetEntriesContext`。
+- `Sync()` 必须满足 `Ready.must_sync` 对落盘可见性的要求。
+- 如果实现 `LocalSnapshot()`，返回的快照会在 `Raftor::Create()` 时先恢复到状态机，并作为 `RawNode` 的初始 applied index。
 
 ## 相关文档
 

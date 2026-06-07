@@ -23,9 +23,13 @@ description: 提案、读请求、超时与回调完成条件说明。
 在 `ReadyProcessor::ApplyEntry()` 中，当对应配置变更日志被应用后，会调用：
 
 - `raw_node_.ApplyConfChange(cc)`
-- `proposal_tracker_.Complete(ctx, "conf change applied")`
+- 更新存储中的 `ConfState`
+- 根据变更类型更新 WAL 地址簿和 transport peer
+- 完成已注册的相关提案追踪项（如果存在）
 
 因此，`AddNode()` / `RemoveNode()` 的同步返回只表示“提案已发起”，真正完成点仍是配置变更 entry 被应用。
+
+地址更新通过 `UpdateNodeAddress(id, addr)` 提交普通日志。该日志使用内部 metadata context，应用后更新 WAL 地址簿和传输层 peer，并完成已注册的相关提案追踪项（如果存在）。
 
 ## 读请求路径
 
@@ -84,17 +88,31 @@ description: 提案、读请求、超时与回调完成条件说明。
 
 请求在限定时间内未完成。
 
+### `ChecksumMismatch`
+
+当 `enable_entry_checksum = true` 且 entry 的 CRC32C 校验失败时返回。该错误被视为致命数据完整性错误：
+
+- 对应 entry 不会应用到状态机。
+- 节点会进入 terminal state 并停止运行。
+- 后续 `Start()`、提案和读请求都会收到 `ChecksumMismatch`。
+
+### `ConfChangeParseError`
+
+内部 metadata 变更或配置变更日志无法解析时返回。
+
 ## 回调完成条件
 
 - 普通提案：对应日志被状态机成功应用，或状态机返回错误后失败完成。
 - 配置变更：对应配置变更日志被应用。
+- metadata 变更：对应内部 metadata 日志被应用。
 - 读请求：对应 read index 已被确认，且本地应用进度达到该索引。
 
 ## 文档中应明确的事项
 
 - `ProposeSync()` / `ReadIndexSync()` 的超时只表示调用方不再等待，不代表后台状态机一定停止处理。
-- `AddNode()` 立即把 peer 加入 transport，但不代表成员已经生效。
+- `AddNode()` 的 peer 地址会随配置变更日志应用而写入 WAL 地址簿并更新 transport。
 - 失去领导权时，未完成提案和未完成读请求的错误语义不同。
+- 节点未 `Start()`、已经 `Stop()` 或正在关闭时，请求会以 `ShuttingDown` 拒绝。
 
 ## 相关文档
 

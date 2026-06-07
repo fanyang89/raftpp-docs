@@ -39,11 +39,14 @@ cmake --build build --target minimal-node-example
 3. 反复调用 `Poll()` 驱动事件循环。
 4. 在单节点场景下等待节点当选 leader。
 
+程序在 20 次轮询内检测到 leader 后返回 `0`；如果未当选 leader 或启动失败，则返回 `1`。
+
 ## 示例特点
 
 - 不引入 HTTP、CLI 或额外业务协议。
 - 状态机实现较小，便于理解接口边界。
 - 覆盖最小接入所需的关键步骤。
+- 快照 payload 通过 `SnapshotWriter` 写入一个最小字节，并在恢复时从 `SnapshotReader` 读到 EOF。
 
 ## 扩展方向
 

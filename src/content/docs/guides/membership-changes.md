@@ -67,6 +67,7 @@ learner 节点不会参与投票。
 
 - `AddNode(id, addr)`
 - `RemoveNode(id)`
+- `UpdateNodeAddress(id, addr)`
 
 ### `AddNode(id, addr)`
 
@@ -75,13 +76,28 @@ learner 节点不会参与投票。
 1. 构造一个 `ConfChangeV2`，类型为 `ADD_NODE`
 2. 把 `addr` 写入配置变更的 `context`
 3. 调用 `raw_node_->ProposeConfChange()` 发起提案
-4. 立即调用 `transport_->AddPeer(id, addr)` 将 peer 加入传输层
 
 需要明确的是：返回成功只表示配置变更提案已经发起，并不表示该节点已经成为生效成员。
+
+对应配置变更日志被应用后，Raftor 才会把地址写入 WAL 地址簿，并对非本节点调用 `transport_.AddPeer(id, addr)`。
 
 ### `RemoveNode(id)`
 
 该接口只负责发起 `REMOVE_NODE` 配置变更提案。真正从传输层移除 peer 的动作发生在对应配置变更日志被应用时。
+
+### `UpdateNodeAddress(id, addr)`
+
+该接口用于更新已存在成员的传输地址，而不是修改成员集合。
+
+处理流程如下：
+
+1. 校验 `id` 非零，`addr` 非空。
+2. 从当前 `ConfState` 确认该节点已存在。
+3. 使用内部 metadata context 提交普通日志。
+4. 日志应用后更新 WAL 地址簿。
+5. 如果目标不是本节点且地址非空，调用 `transport_.AddPeer(id, addr)`；如果目标是本节点或地址为空，则移除对应 peer。
+
+运行期节点地址变化应通过该接口提交，不能只修改 `initial_peers` 后重启。
 
 ## 配置变更日志的应用
 
@@ -89,7 +105,8 @@ learner 节点不会参与投票。
 
 - 将 v1 配置变更转换为 `ConfChangeV2`
 - 调用 `raw_node_.ApplyConfChange(cc)` 更新跟踪器状态
-- 对 `REMOVE_NODE` 执行 `transport_.RemovePeer()`
+- 对 `ADD_NODE` / `ADD_LEARNER_NODE` 写入地址簿并执行 `transport_.AddPeer()`
+- 对 `REMOVE_NODE` 删除地址簿并执行 `transport_.RemovePeer()`
 - 在存在上下文时完成对应提案回调
 
 ## 文档中应明确的限制
@@ -97,6 +114,8 @@ learner 节点不会参与投票。
 - 运行中的成员变更不能通过修改 `initial_peers` 完成。
 - simple change 一次不能修改多个 voter。
 - `AddNode()` 的返回成功不等于成员已经提交并生效。
+- `AddNode()` 不再在提案发起时立即加入 transport；peer 加入发生在配置变更日志应用后。
+- 地址更新应使用 `UpdateNodeAddress()`，并要求目标节点已在当前配置中。
 - learner 与 `learners_next` 的差异必须明确区分。
 
 ## 相关文档

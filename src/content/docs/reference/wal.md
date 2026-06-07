@@ -21,6 +21,7 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 - 追加日志条目
 - 保存 `HardState`
 - 保存 `ConfState`
+- 保存 Raftor peer address book
 - 读取日志区间
 - 执行压缩与快照应用
 - 恢复已有 WAL 文件
@@ -40,9 +41,25 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 - `Compact()`
 - `ApplySnapshot()`
 - `Sync()`
+- `LocalSnapshot()`
+- `LogSizeBytes()`
 - `IsInitialized()`
+- `GetPeerAddresses()` / `SetPeerAddresses()`
+- `UpsertPeerAddress()` / `RemovePeerAddress()`
+- `SnapshotIndex()`
 
 其中 `IsInitialized()` 通过 `ConfState.voters` 是否非空判断该存储是否已经完成初始集群配置写入。
+
+## Peer 地址簿
+
+`WAL` 元数据会持久化 Raftor 使用的 peer 地址簿。
+
+- 首次引导时，地址簿来自 `initial_peers`；单节点引导时写入当前节点的 `node_id` 和 `listen_addr`。
+- 节点重启且 WAL 已初始化时，Raftor 会从 WAL 读取 peer 地址，而不是重新使用 `initial_peers`。
+- `UpdateNodeAddress(id, addr)` 会通过普通日志提交地址变更；应用后调用 `UpsertPeerAddress()` 并更新传输层 peer。
+- `RemoveNode(id)` 对应的配置变更应用后会调用 `RemovePeerAddress()` 并移除传输层 peer。
+
+这意味着运行期地址变化应通过 Raftor API 提交，而不是只修改重启参数。
 
 ## 快照语义
 
@@ -101,8 +118,11 @@ WAL 子系统位于 `include/raftpp/raftor/wal/`，用于为 `Raftor` 提供持�
 - 回放 segment
 - 重建索引
 - 恢复 `HardState` 与 `ConfState`
+- 恢复 peer address book 与快照索引
 
 因此，节点重启后应继续使用原有 `data_dir`，否则不会进入同一恢复路径。
+
+`WALStorage::LocalSnapshot()` 会返回最新本地应用快照。`Raftor::Create()` 会在创建 `RawNode` 前先把该快照恢复到业务状态机，并把快照 index 作为初始 applied index。
 
 ## 相关文档
 

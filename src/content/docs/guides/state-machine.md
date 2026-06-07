@@ -16,6 +16,7 @@ description: 如何实现 raftpp::raftor::StateMachine 并与业务逻辑对接�
 - 调用顺序与提交顺序一致。
 - 输入可能是普通数据日志、配置变更日志，或者 leader 当选后产生的空日志。
 - 返回值中的 `ApplyResult.response` 会回传给提案方。
+- Raftor 会自行处理配置变更和内部 metadata entry；业务状态机仍可能收到配置变更 entry 的通知，但不应把它当作普通业务命令。
 
 典型处理步骤如下：
 
@@ -112,6 +113,8 @@ raftpp::Result<void> RestoreSnapshot(
 ### 快照要能独立恢复
 
 快照不是缓存，它必须可以作为一个完整恢复点使用。不要依赖“快照之外的其他隐含状态”才能启动成功。
+
+节点重启时，Raftor 会优先用本地快照恢复状态机，再从对应 applied index 继续驱动 RAFT。
 
 ## 参考实现
 

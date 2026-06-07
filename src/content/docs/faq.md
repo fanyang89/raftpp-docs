@@ -35,3 +35,15 @@ description: 使用 raftpp 时常见的问题与注意事项。
 
 - 验证最小接入流程：`minimal_node`
 - 参考完整应用结构：`kvstore`
+
+## 单节点测试是否必须打开网络端口？
+
+不一定。可以设置 `transport_kind = TransportKind::Noop`，此时不会打开 socket，也不会连接远端 peer。该模式只适合单节点或测试。
+
+## 如何更新节点地址？
+
+运行期地址变更应调用 `UpdateNodeAddress(id, addr)`。`initial_peers` 只在首次引导时生效，WAL 已初始化后重启会优先使用持久化地址簿。
+
+## 什么时候启用 `enable_entry_checksum`？
+
+需要检测 entry 数据损坏时可以启用。默认关闭是为了兼容旧 WAL 和滚动升级。启用后如果发现 `ChecksumMismatch`，节点会停止并拒绝后续请求。

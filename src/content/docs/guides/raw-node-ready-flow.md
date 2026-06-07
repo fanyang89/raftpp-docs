@@ -16,6 +16,7 @@ description: Ready、LightReady 与持久化顺序的使用说明。
 - `read_states`：读索引结果。
 - `light`：推进后可继续处理的轻量结果。
 - `must_sync`：本次持久化是否需要同步落盘。
+- `is_persisted_msg`：提示消息是否应走持久化后发送路径。
 
 ## `LightReady` 的含义
 
@@ -30,13 +31,16 @@ description: Ready、LightReady 与持久化顺序的使用说明。
 推荐顺序如下：
 
 1. 读取 `Ready`。
-2. 持久化 `entries`、`hs` 和 `snapshot`。
-3. 如果 `must_sync` 为真，则完成必要的同步落盘。
-4. 发送当前批次应发送的消息。
-5. 应用已提交日志和快照。
-6. 调用 `Advance()`。
-7. 处理返回的 `LightReady`。
-8. 在日志应用完成后调用 `AdvanceApply()` 或 `AdvanceApplyTo()`。
+2. 如启用 entry checksum，先校验待持久化 entries。
+3. 持久化 `entries` 和 `hs`。
+4. 如果 `must_sync` 为真，则完成必要的同步落盘。
+5. 安装 `snapshot`。
+6. 发送持久化后可发送的消息。
+7. 应用已提交日志。
+8. 处理 `read_states`。
+9. 调用 `Advance()`。
+10. 处理返回的 `LightReady`。
+11. 在日志应用完成后调用 `AdvanceApply()` 或 `AdvanceApplyTo()`。
 
 顺序颠倒可能导致：
 
@@ -88,16 +92,17 @@ description: Ready、LightReady 与持久化顺序的使用说明。
 while (raw_node.HasReady()) {
     auto rd = raw_node.GetReady();
 
-    // 1. persist rd.entries / rd.hs / rd.snapshot
+    // 1. persist rd.entries / rd.hs
     // 2. if rd.must_sync: sync storage
-    // 3. send messages
-    // 4. apply committed entries / snapshot
+    // 3. install rd.snapshot if present
+    // 4. send persisted messages
+    // 5. apply committed entries
 
     auto light = raw_node.Advance(rd);
 
-    // 5. send light.messages
-    // 6. apply light.committed_entries
-    // 7. raw_node.AdvanceApply()
+    // 6. send light.messages
+    // 7. apply light.committed_entries
+    // 8. raw_node.AdvanceApply()
 }
 ```
 

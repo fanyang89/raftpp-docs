@@ -19,6 +19,11 @@ RPC 传输层位于 `include/raftpp/raftor/rpc/`，负责节点间消息发送�
 - `Poll(timeout)`
 - `Run()`
 
+当前内置实现包括：
+
+- `CapnpTransport`：默认网络传输实现。
+- `NoopTransport`：不打开 socket，丢弃出站消息，适合无远端 peer 的单节点或测试场景。
+
 ## 回调线程模型
 
 `transport.h` 明确规定：

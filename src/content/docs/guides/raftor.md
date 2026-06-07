@@ -22,7 +22,9 @@ auto raftor = raftpp::raftor::Raftor::Create(
 ```
 
 - 第一种：使用默认 WAL 存储和默认传输实现。
-- 第二种：注入自定义存储和传输，适用于测试或定制化集成场景。
+- 第二种：注入自定义 `WritableStorage` 和传输，适用于测试或定制化集成场景。
+
+默认传输由 `RaftorConfig.transport_kind` 决定：`Capnp` 会打开网络监听，`Noop` 不打开 socket 且只适合没有远端 peer 的单节点或测试场景。
 
 ## 生命周期
 
@@ -109,6 +111,12 @@ raftor->ReadIndex("ctx", [](raftpp::Result<void> result) {
 
 提交一个配置变更提案，把指定节点移出集群。
 
+### `UpdateNodeAddress(id, addr)`
+
+提交一个内部 metadata 日志来更新已有成员的传输地址。该成员必须已经存在于当前 `ConfState` 中。
+
+地址更新提交并应用后，会同步更新 WAL 地址簿和传输层 peer。节点重启后，默认 WAL 存储会从地址簿恢复 peer 地址。
+
 ### `TransferLeader(target_id)`
 
 发起领导权转移。这是 best-effort 操作；如果目标节点未追平或不可达，转移可能失败。
@@ -141,6 +149,14 @@ raftor->ReadIndex("ctx", [](raftpp::Result<void> result) {
 `TakeSnapshot()` 会主动触发一次快照流程。
 
 在长期运行场景中，通常通过 `RaftorConfig` 中的快照阈值进行自动触发。
+
+节点启动时，如果存储中存在本地快照，`Raftor::Create()` 会先把快照恢复到状态机，再用快照 index 作为 `RawNode` 的初始 applied index。
+
+## 数据完整性
+
+如果设置 `config.enable_entry_checksum = true`，Raftor 会校验提案 entry 的 checksum。发现 `ChecksumMismatch` 时会进入 terminal state：节点停止运行，后续 `Start()`、提案和读请求都会返回同一个错误。
+
+该选项默认关闭，用于兼容旧 WAL 数据和滚动升级过程。
 
 ## 何时直接使用 `RawNode`
 

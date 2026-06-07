@@ -29,6 +29,8 @@ description: 快照生成、恢复、自动触发与日志压缩语义说明。
 5. 将快照应用到存储。
 6. 对 WAL 执行压缩。
 
+快照 payload 通过 `SnapshotWriter` 先写入临时文件，再装载到 Cap'n Proto `Snapshot.data` 中应用到存储。状态机实现不需要一次性把全部快照内容保存在内存中。
+
 ## 安装快照的顺序
 
 当 `Ready` 中带有快照时，`ReadyProcessor::ApplySnapshot()` 的处理顺序是：
@@ -68,6 +70,8 @@ description: 快照生成、恢复、自动触发与日志压缩语义说明。
 
 - 快照不可用不一定是错误恢复点损坏，也可能只是当前尚未生成或尚未准备好。
 - 调用方需要把该状态与致命存储错误区分开来。
+
+`WALStorage::LocalSnapshot()` 用于节点本地重启恢复；如果存在快照，`Raftor::Create()` 会先恢复状态机，再用该快照 index 初始化应用进度。
 
 ## 配置建议
 

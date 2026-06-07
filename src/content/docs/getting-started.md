@@ -11,6 +11,8 @@ description: 从构建仓库到运行最小节点的入门步骤。
 - CMake 3.28+
 - Ninja
 - Linux 或 macOS 开发环境
+- Task（用于仓库内置常用命令）
+- Docker（仅 `task fmt` / `task check-fmt` 需要）
 
 ## 常用命令
 
@@ -21,6 +23,7 @@ task cmake
 task build
 task test
 task fmt
+task check-fmt
 ```
 
 说明：
@@ -29,6 +32,23 @@ task fmt
 - `task build`：构建测试目标。
 - `task test`：运行单元测试与数据驱动测试。
 - `task fmt`：通过仓库提供的容器化 `clang-format` 统一格式化代码。
+- `task check-fmt`：只检查格式，不修改文件。
+
+其他常用任务：
+
+```bash
+task unit-test-asan
+task unit-test-tsan
+task unit-test-release
+task coverage
+task iwyu
+```
+
+- `task unit-test-asan`：使用 AddressSanitizer 构建并运行单元测试。
+- `task unit-test-tsan`：使用 ThreadSanitizer 构建并运行单元测试。
+- `task unit-test-release`：使用 `Release` preset 构建并运行单元测试。
+- `task coverage`：使用 `Coverage` preset 和 `llvm-cov` 生成覆盖率报告。
+- `task iwyu`：启用 include-what-you-use 检查。
 
 ## 可选构建参数
 
@@ -36,11 +56,19 @@ task fmt
 cmake --preset=Debug -B build -DRAFTPP_SANITIZE=address
 cmake --preset=Debug -B build -DRAFTPP_SANITIZE=thread
 cmake --preset=Debug -B build -DRAFTPP_WITH_LIBURING=ON
+cmake --preset=Coverage -B build -DRAFTPP_COVERAGE=ON
+cmake --preset=Debug -B build -DRAFTPP_BUILD_EXAMPLES=OFF
+cmake --preset=Debug -B build -DRAFTPP_BUILD_TESTING=OFF
+cmake --preset=Debug -B build -DRAFTPP_USE_EXTERNAL_FMT=ON
 ```
 
 - `RAFTPP_SANITIZE=address`：启用 AddressSanitizer。
 - `RAFTPP_SANITIZE=thread`：启用 ThreadSanitizer。
 - `RAFTPP_WITH_LIBURING=ON`：在 Linux 上启用 `io_uring` 支持，要求系统已提供 `liburing`。
+- `RAFTPP_COVERAGE=ON`：启用覆盖率插桩。
+- `RAFTPP_BUILD_EXAMPLES=OFF`：关闭示例目标构建。
+- `RAFTPP_BUILD_TESTING=OFF`：关闭测试目标构建。
+- `RAFTPP_USE_EXTERNAL_FMT=ON`：使用系统或外部 `fmt` 包，而不是仓库内置 header-only `fmt`。
 
 ## 最小集成步骤
 
@@ -81,6 +109,14 @@ auto result = raftpp::raftor::Raftor::Create(config, std::make_unique<MyStateMac
 单节点引导时，`initial_peers` 保持为空即可，`Raftor` 会把本节点作为唯一投票节点启动。
 
 多节点首次引导时，`initial_peers` 应包含完整初始成员列表，并且需要包含当前节点自己。
+
+如果只是单节点测试且不想打开网络监听，可设置：
+
+```cpp
+config.transport_kind = raftpp::raftor::TransportKind::Noop;
+```
+
+该模式会丢弃出站消息，不适合存在远端 peer 的集群。
 
 ### 3. 启动并轮询
 
@@ -128,10 +164,11 @@ raftor->ReadIndex("read-ctx", [](raftpp::Result<void> result) {
 仓库内置两个示例目标：
 
 ```bash
-cmake --build build --target minimal-node-example kvstore-example
+cmake --build build --target minimal-node-example kvstore-example kvstore-cli
 ```
 
 - `minimal-node-example`：最小单节点示例。
 - `kvstore-example`：带 HTTP 接口的分布式 KV 示例。
+- `kvstore-cli`：访问 KV 示例 HTTP 接口的命令行客户端。
 
 首次验证接入流程时，可优先构建并运行 `minimal-node-example`。

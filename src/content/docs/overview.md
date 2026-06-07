@@ -12,7 +12,8 @@ description: raftpp 的定位、核心能力与主要组件关系。
 - 支持 Joint Consensus，用于安全的成员增删。
 - 支持线性一致读，包含 `Safe` 和 `LeaseBased` 两种模式。
 - 存储可插拔，内置内存存储与 WAL 存储实现。
-- 传输可插拔，默认提供 Cap'n Proto RPC。
+- 传输可插拔，默认提供 Cap'n Proto RPC，并提供无网络的 `NoopTransport`。
+- 可选 entry checksum，用于检测提案 entry 的端到端数据损坏。
 - 集成 OpenTelemetry 观测能力。
 
 ## 组件分层
@@ -35,7 +36,7 @@ description: raftpp 的定位、核心能力与主要组件关系。
 - 线程安全的提案与读接口。
 - Ready 处理流程编排。
 - 状态机回调、快照读写、超时控制。
-- WAL 与 RPC 的默认集成。
+- WAL、RPC、peer 地址簿和本地快照恢复的默认集成。
 
 ## 适用场景
 
